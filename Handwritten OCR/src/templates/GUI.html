@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/semantic-ui-css@2.2.12/semantic.min.css'>
+    <link rel="stylesheet" type = text/less href="{{ url_for('static', filename='css/GUI.less') }}">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/2.5.1/less.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>OCR</title>
+</head>
+<body>  
+  <div class="ui container">  
+        <h1 class="ui header">Image to Text</h1>
+        <div class="desc">Extract all the text from a selected image using Handwritting Text Recognizer.</div>
+        
+        <div class="ui grid stackable">
+          <div class="row">
+              
+            <div class="eight wide column">
+                <br><br>
+              <div class="ui card">
+                <div class="content">
+                  <h2 class="header">Input</h2>
+                </div>
+                
+                <div class="content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-images" viewBox="0 0 16 16">
+                        <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                        <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
+                      </svg> 
+                    <img id="image"  class="ui centered medium image"/>
+                </div>
+                <div class="content extra">
+                    <form name = "form" action="/" method="POST" enctype="multipart/form-data">
+                    <input id="file" name = "data" type="file" onchange="proccess(window.lastFile=this.files[0])"> 
+                    <input type="submit" value="Submit" style="min-width: 2rem;"> 
+                    <a href="/">
+                      <input type="button" value="Refresh" style="min-width: 2rem;">
+                     </a>
+                    </form>
+               
+                 
+                </div>
+              </div>
+            </div>
+              
+            <div class="eight wide column">
+                <br><br>
+              <div class="ui card">
+                <div class="content">
+                  <h2 class="header">Output</h2>
+                </div>
+                {% if Output == ""  %}
+                <div class="content content-result">
+                  <div class='ui grid'>
+                    <div class='row result'>
+                      <div class="column placeholder">
+                        No Output <br/>
+                        <span>Choose a file to start</span>    
+                    </div>  
+                </div>
+              </div>
+            </div>
+              {% else %}
+               <script>
+                $("#image").attr("src","{{image}}");
+                </script>
+                <div class='sixteen wide column output' > 
+                <div class='ui message'>{{ Output }}</div> 
+                </div>
+                 {% endif%}
+                <div class="content extra">
+               
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+       
+      </div> 
+      <script src='https://cdn.rawgit.com/naptha/tesseract.js/1.0.10/dist/tesseract.js'></script>
+      <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+      <script src='https://cdn.jsdelivr.net/npm/semantic-ui-css@2.2.12/semantic.min.js'></script>
+    
+ 
+ <script>
+
+/**
+* main proccess function
+*/
+function proccess(file){
+   
+  var src = (window.URL ? URL : webkitURL).createObjectURL(file);
+ 
+    $(".result").html("");
+     //Preview Image
+    var src = (window.URL ? URL : webkitURL).createObjectURL(file);
+    $("#image").attr("src", src);
+   
+   
+    if('{{Output}}' == ""){
+        //Proccess Image
+        Tesseract.recognize(file)
+        .progress(function(data){
+        console.log(data);
+        progress(data);
+        })
+        .then(function(data){
+        console.log(data);
+        result(data)
+        })
+      }
+    }
+
+  /**
+  * progress function
+  */
+  function progress(packet){
+    var r = $(".result");
+    
+    if(r.length > 0 && r.find(".status").last().html() == packet.status){
+      if('progress' in packet) {
+        r.find("progress").last().val(packet.progress);
+      }
+      
+    } else {    
+      var tStatus = "<div class='status ten wide column'>" + packet.status +"</div>";
+      var tProgress = "<div class='six wide column'>" + (typeof packet.progress == "undefined" ? "" : ("<progress value='" + packet.progress + "' max='1'>")) +"</div>";
+                                                                                                        
+      r.append(tStatus + tProgress);
+    }
+  }
+</script>
+   
+      
+ 
+</body>
+</html>
