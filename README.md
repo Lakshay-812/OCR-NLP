@@ -54,3 +54,9 @@ Model consists of : <br/>
 **IV. Refine BERT predictions by using suggestions from Python SpellChecker**
             
    ✓ The suggested word list from SpellChecker, which incorporates characters from the garbled OCR output, is combined with BERT’s context-based suggestions to yield                better predictions and the best prediction replaces the [MASK] token.
+
+## Sample Output
+![Sample 1](https://user-images.githubusercontent.com/78135321/148759040-50cadf66-6ded-48ba-8d1b-f0d475ae507d.png)
+
+   
+   
