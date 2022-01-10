@@ -5,7 +5,7 @@ An Optical Character Reader for extracting text from images and scanned handwrit
 ❖ Text from Images Using Tesseract <br/>
 ❖ Text from handwritten Images Using TensorFlow <br/>
 
-(NLP) Natural Language Processing techniques used to improve OCR accuracy.<br/>
+Natural Language Processing (NLP) techniques used to improve OCR accuracy.<br/>
 
 ❖ Using BERT(Bidirectional Encoder Representations from Transformers)<br/>
 ❖ Using NLTK<br/>
