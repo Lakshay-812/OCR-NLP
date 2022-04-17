@@ -11,7 +11,7 @@ import sys
 def main(filename,mode,detector):
 #def main():
     
-    pytesseract.pytesseract.tesseract_cmd = r'C:\program Files\Tesseract-OCR\tesseract.exe'
+    pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
 
     # parser = argparse.ArgumentParser()
     # parser.add_argument('--image', help='Image to read', type=Path,default = "./images/para.png")
@@ -39,6 +39,7 @@ def main(filename,mode,detector):
 
     '''Bert used for improving OCR accuracy'''  
     if(mode == "bert"):
+
         print(text_original)
         a = "\n"+typo_correction(text,text_original)
         

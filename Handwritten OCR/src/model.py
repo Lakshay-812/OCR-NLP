@@ -53,7 +53,7 @@ class Model:
         # initialize TF
         self.sess, self.saver = self.setup_tf()
 
-    def setup_cnn(self):
+    def setup_cnn(self) -> None:
         """Create CNN layers."""
         cnn_in4d = tf.expand_dims(input=self.input_imgs, axis=3)
 
@@ -77,7 +77,7 @@ class Model:
 
         self.cnn_out_4d = pool
 
-    def setup_rnn(self):
+    def setup_rnn(self) -> None:
         """Create RNN layers."""
         rnn_in3d = tf.squeeze(self.cnn_out_4d, axis=[2])
 
@@ -102,8 +102,7 @@ class Model:
         self.rnn_out_3d = tf.squeeze(tf.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'),
                                      axis=[2])
 
-    def setup_ctc(self):
-
+    def setup_ctc(self) -> None:
         """Create CTC loss and decoder."""
         # BxTxC -> TxBxC
         self.ctc_in_3d_tbc = tf.transpose(a=self.rnn_out_3d, perm=[1, 0, 2])
@@ -131,12 +130,12 @@ class Model:
         elif self.decoder_type == DecoderType.BeamSearch:
             self.decoder = tf.nn.ctc_beam_search_decoder(inputs=self.ctc_in_3d_tbc, sequence_length=self.seq_len,
                                                          beam_width=50)
-       
+        # word beam search decoding (see https://github.com/githubharald/CTCWordBeamSearch)
         elif self.decoder_type == DecoderType.WordBeamSearch:
             # prepare information about language (dictionary, characters in dataset, characters forming words)
             chars = ''.join(self.char_list)
-            word_chars = open(r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\model\wordCharList.txt").read().splitlines()[0]
-            corpus = open(r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\data\corpus.txt').read()
+            word_chars = open('../model/wordCharList.txt').read().splitlines()[0]
+            corpus = open('../data/corpus.txt').read()
 
             # decode using the "Words" mode of word beam search
             from word_beam_search import WordBeamSearch
@@ -154,7 +153,7 @@ class Model:
         sess = tf.compat.v1.Session()  # TF session
 
         saver = tf.compat.v1.train.Saver(max_to_keep=1)  # saver saves model to file
-        model_dir = r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\model'
+        model_dir = '../model/'
         latest_snapshot = tf.train.latest_checkpoint(model_dir)  # is there a saved model?
 
         # if model must be restored (for inference), there must be a snapshot
@@ -215,7 +214,7 @@ class Model:
         # map labels to chars for all batch elements
         return [''.join([self.char_list[c] for c in labelStr]) for labelStr in label_strs]
 
-    def train_batch(self, batch: Batch) -> int:
+    def train_batch(self, batch: Batch) -> float:
         """Feed a batch into the NN to train it."""
         num_batch_elements = len(batch.imgs)
         max_text_len = batch.imgs[0].shape[0] // 4
@@ -230,7 +229,7 @@ class Model:
     @staticmethod
     def dump_nn_output(rnn_output: np.ndarray) -> None:
         """Dump the output of the NN to CSV file(s)."""
-        dump_dir = r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR/dump/'
+        dump_dir = '../dump/'
         if not os.path.isdir(dump_dir):
             os.mkdir(dump_dir)
 
@@ -304,4 +303,4 @@ class Model:
     def save(self) -> None:
         """Save model to file."""
         self.snap_ID += 1
-        self.saver.save(self.sess, r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\model/snapshot', global_step=self.snap_ID)
+        self.saver.save(self.sess, '../model/snapshot', global_step=self.snap_ID)

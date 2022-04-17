@@ -1,5 +1,5 @@
 import torch
-from pytorch_pretrained_bert import BertTokenizer, BertForMaskedLM
+from transformers import BertTokenizer, BertForMaskedLM
 import re
 import nltk
 # nltk.download('averaged_perceptron_tagger')
@@ -51,8 +51,10 @@ def typo_detection_correction(text):
         
     
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    
     tokenized_text = tokenizer.tokenize(text)
     tokenized_text = [t for t in tokenized_text if t!="."]
+    
     indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
     MASKIDS = [i for i, e in enumerate(tokenized_text) if e == '[MASK]']
 
@@ -74,13 +76,15 @@ def typo_detection_correction(text):
 
     # Predict all tokens
     with torch.no_grad():
-        predictions = model(tokens_tensor, segments_tensors)
+        output = model(tokens_tensor, segments_tensors)
+        predictions = output[0]
   
     def predict_word(text_original, predictions, maskids):
         print("\n",text_original)
         pred_words=[]
         for i in range(len(MASKIDS)):
-            preds = torch.topk(predictions[0, MASKIDS[i]], k=50) 
+            probs = torch.nn.functional.softmax(predictions[0, MASKIDS[i]], dim=-1)
+            preds = torch.topk(probs, k=50) 
             indices = preds.indices.tolist()
             list1 = tokenizer.convert_ids_to_tokens(indices)
             list2 = suggestedwords[i]

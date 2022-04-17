@@ -19,7 +19,7 @@ def predict():
         global pic
         image = request.files['data']
         pic = io.imread(image)
-        os.chdir(r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Tesseract\static")
+        os.chdir(r"D:\Projects\OCR-NLP\Tesseract\static")
         cv2.imwrite("local.jpg",pic)
         global op
         op = PyTesseract.main(image,"bert","")
@@ -33,5 +33,5 @@ def predict():
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(port=8000)
   

@@ -1,14 +1,15 @@
 import argparse
 import json
-import sys
 from typing import Tuple, List
 
+from split import split
+from typo1 import typo_detection_correction
+
+import sys
 import cv2
 import editdistance
 from path import Path
 
-from split import split
-from typo1 import typo_detection_correction
 from dataloader_iam import DataLoaderIAM, Batch
 from model import Model, DecoderType
 from preprocessor import Preprocessor
@@ -16,9 +17,10 @@ from preprocessor import Preprocessor
 
 class FilePaths:
     """Filenames and paths to data."""
-    fn_char_list = r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\model\charList.txt'
-    fn_summary = r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\model\summary.json'
-    fn_corpus = r'C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\data\corpus.txt'
+    fn_char_list = '../model/charList.txt'
+    fn_summary = '../model/summary.json'
+    fn_corpus = '../data/corpus.txt'
+
 
 def get_img_height() -> int:
     """Fixed height for NN."""
@@ -38,6 +40,11 @@ def write_summary(char_error_rates: List[float], word_accuracies: List[float]) -
         json.dump({'charErrorRates': char_error_rates, 'wordAccuracies': word_accuracies}, f)
 
 
+def char_list_from_file() -> List[str]:
+    with open(FilePaths.fn_char_list) as f:
+        return list(f.read())
+
+
 def train(model: Model,
           loader: DataLoaderIAM,
           line_mode: bool,
@@ -47,7 +54,7 @@ def train(model: Model,
     summary_char_error_rates = []
     summary_word_accuracies = []
     preprocessor = Preprocessor(get_img_size(line_mode), data_augmentation=True, line_mode=line_mode)
-    best_char_error_rate = float('inf')  # best valdiation character error rate
+    best_char_error_rate = float('inf')  # best validation character error rate
     no_improvement_since = 0  # number of epochs no improvement of character error rate occurred
     # stop training after this number of epochs without improvement
     while True:
@@ -120,7 +127,8 @@ def validate(model: Model, loader: DataLoaderIAM, line_mode: bool) -> Tuple[floa
     print(f'Character error rate: {char_error_rate * 100.0}%. Word accuracy: {word_accuracy * 100.0}%.')
     return char_error_rate, word_accuracy
 
-def infer(model: Model, fn_img: Path):
+
+def infer(model: Model, fn_img: Path) -> None:
     """Recognizes text in image provided by file path."""
     img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
     assert img is not None
@@ -130,46 +138,83 @@ def infer(model: Model, fn_img: Path):
 
     batch = Batch([img], None, 1)
     recognized, probability = model.infer_batch(batch, True)
+    # print(f'Recognized: "{recognized[0]}"')
+    # print(f'Probability: {probability[0]}')
     return recognized[0]
 
 
-def main(mode,decoder):
-#def main():
-
+def parse_args() -> argparse.Namespace:
+    """Parses arguments from the command line."""
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--mode', choices=['infer'], default='infer')
-    # parser.add_argument('--decoder', choices=['bestpath', 'wordbeamsearch'], default='bestpath')
-    # parser.add_argument('--img_file', help='Image used for inference.', type=Path, default='../data/word.png')
-    parser.add_argument('--dump', help='Dump output of NN to CSV file(s).', action='store_true')
-    args = parser.parse_args()
-    
-    # decoder = args.decoder
-    # mode = args.mode
-    # image = args.img_file
 
-    ''' Setting chosen CTC decoder'''
-    decoder_mapping = {'wordbeamsearch': DecoderType.WordBeamSearch,'bestpath': DecoderType.BestPath}
+    parser.add_argument('--mode', choices=['train', 'validate', 'infer'], default='infer')
+    parser.add_argument('--decoder', choices=['bestpath', 'beamsearch', 'wordbeamsearch'], default='wordbeamsearch')
+    parser.add_argument('--batch_size', help='Batch size.', type=int, default=100)
+    parser.add_argument('--data_dir', help='Directory containing IAM dataset.', type=Path, required=False)
+    parser.add_argument('--fast', help='Load samples from LMDB.', action='store_true')
+    parser.add_argument('--line_mode', help='Train to read text lines instead of single words.', action='store_true')
+    parser.add_argument('--img_file', help='Image used for inference.', type=Path, default='../data/word.png')
+    parser.add_argument('--early_stopping', help='Early stopping epochs.', type=int, default=25)
+    parser.add_argument('--dump', help='Dump output of NN to CSV file(s).', action='store_true')
+
+    return parser.parse_args()
+
+
+def main(mode,decoder):
+    """Main function."""
+
+    # parse arguments and set CTC decoder
+    # args = parse_args()
+    decoder_mapping = {'bestpath': DecoderType.BestPath,
+                       'wordbeamsearch': DecoderType.WordBeamSearch}
     decoder_type = decoder_mapping[decoder]
 
-    '''Loading the trained model and feeding split images to it '''
+    # # train the model
+    # if args.mode == 'train':
+    #     loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
+
+    #     # when in line mode, take care to have a whitespace in the char list
+    #     char_list = loader.char_list
+    #     if args.line_mode and ' ' not in char_list:
+    #         char_list = [' '] + char_list
+
+    #     # save characters and words
+    #     with open(FilePaths.fn_char_list, 'w') as f:
+    #         f.write(''.join(char_list))
+
+    #     with open(FilePaths.fn_corpus, 'w') as f:
+    #         f.write(' '.join(loader.train_words + loader.validation_words))
+
+    #     model = Model(char_list, decoder_type)
+    #     train(model, loader, line_mode=args.line_mode, early_stopping=args.early_stopping)
+
+    # # evaluate it on the validation set
+    # elif args.mode == 'validate':
+    #     loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
+    #     model = Model(char_list_from_file(), decoder_type, must_restore=True)
+    #     validate(model, loader, args.line_mode)
+
+    # infer text on test image
     if mode == 'infer':
-        model = Model(list(open(FilePaths.fn_char_list).read()), decoder_type, must_restore=True, dump=args.dump)
-        image = r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\src\static\local.jpg"
+        model = Model(char_list_from_file(), decoder_type, must_restore=True)
+        # infer(model, args.img_file)
+        image = r".\static\local.jpg"
+        # image = r"D:\Projects\OCR-NLP\SimpleHTR-master\data\t3.jpg"
         n = split(image)
         result = ""
         for i in range(n+1): 
-            temp = infer(model,r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\data\temp\result{}.png".format(i)) + "\n"
+            temp = infer(model,r"..\data\temp\result{}.png".format(i)) + "\n"
+            # print(temp)
             if(len(temp)>1):
                 result+= temp
         print("\n",result)
-
+        
         '''Sending for Post-OCR typo detection and correction'''
         result = typo_detection_correction(result)
         
         print("\n",result)
-        return result    
+        return result 
 
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2])
-    #main()

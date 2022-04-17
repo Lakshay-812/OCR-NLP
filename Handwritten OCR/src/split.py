@@ -61,8 +61,8 @@ def split(img_path):
         if(-uppers[i]+20+lowers[i]>=20):
             count+=1
             if(uppers[i]>10 and lowers[i]+10<=H):
-                cv2.imwrite(r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\data\temp\result{}.png".format(count), rotated[uppers[i]-10:lowers[i]+10])
+                cv2.imwrite(r"..\data\temp\result{}.png".format(count), rotated[uppers[i]-10:lowers[i]+10])
             else:
-                 cv2.imwrite(r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\data\temp\result{}.png".format(count), rotated[uppers[i]:lowers[i]])
+                 cv2.imwrite(r"..\data\temp\result{}.png".format(count), rotated[uppers[i]:lowers[i]])
              
     return count    

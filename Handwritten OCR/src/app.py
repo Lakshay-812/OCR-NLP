@@ -3,7 +3,7 @@ from werkzeug.utils import redirect
 import cv2
 import os
 from skimage import io
-import htr
+import main
 op = ""
 pic = ""
 app = Flask(__name__)
@@ -15,11 +15,10 @@ def predict():
         global pic
         image = request.files['data']
         pic = io.imread(image)
-        os.chdir(r"C:\Users\AMIT JAIN\Desktop\CSD 350\NLP-OCR\OCR-NLP\Handwriting OCR\src\static")
-        cv2.imwrite("local.jpg",pic)
+        os.chdir(r"D:\Projects\OCR-NLP\Handwritten OCR\src")
+        cv2.imwrite("static\local.jpg",pic)
         global op
-        op = htr.main("infer","bestpath")
-        #op = htr.main("infer","wordbeamsearch")
+        op = main.main("infer","wordbeamsearch")
         return redirect('/')
        
     else:

@@ -1,10 +1,10 @@
 import torch
-from pytorch_pretrained_bert import BertTokenizer, BertForMaskedLM
+from transformers import BertTokenizer, BertForMaskedLM
 import re
 import nltk
+# nltk.download('punkt')
 from enchant.checker import SpellChecker
 from difflib import SequenceMatcher
-
 # nltk.download('averaged_perceptron_tagger')
 # nltk.download('maxent_ne_chunker')
 # nltk.download('words')
@@ -50,9 +50,8 @@ def typo_correction(text,text_original):
         text = text.replace(w, '[MASK]')
         text_original = text_original.replace(w, '[MASK]')
     
-     
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    
+   
     '''Tokenizing our text'''
     tokenized_text = tokenizer.tokenize(text)
     tokenized_text = [t for t in tokenized_text if t!="."]
@@ -74,14 +73,20 @@ def typo_correction(text,text_original):
     '''Torch inputs''' 
     tokens_tensor = torch.tensor([indexed_tokens])
    
+        
+    print("In Bert")
     '''Load pre-trained model'''
     model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+    print("Out Bert")
+
 
     ''' Predicting all tokens'''
     with torch.no_grad():
-        predictions = model(tokens_tensor, segments_tensors)
+        output = model(tokens_tensor, segments_tensors)
+        predictions = output[0]
     
     text_original = predict_word(text_original, predictions, MASKIDS,tokenizer,suggestedwords)
+
     return text_original    
 
 '''Combining BERT's suggestions with SpellChecker's suggestions'''
@@ -89,8 +94,9 @@ def predict_word(text_original, predictions, MASKIDS,tokenizer,suggestedwords):
         print(text_original)
         pred_words=[]
         for i in range(len(MASKIDS)):
-            
-            preds = torch.topk(predictions[0, MASKIDS[i]], k=50) 
+          
+            probs = torch.nn.functional.softmax(predictions[0, MASKIDS[i]], dim=-1)
+            preds = torch.topk(probs, k=50) 
             indices = preds.indices.tolist()
             list1 = tokenizer.convert_ids_to_tokens(indices)
             list2 = suggestedwords[i]
